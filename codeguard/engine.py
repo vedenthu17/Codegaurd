@@ -97,12 +97,12 @@ class Engine:
                 log.exception("analyzer %s failed", a.name)
         return out
 
-    def analyze(self, code: object) -> Analysis:
+    def analyze(self, code: object, language: str | None = None) -> Analysis:
         t0 = time.perf_counter()
         try:
             text = code if isinstance(code, str) else ("" if code is None else str(code))
             text = text.replace("\x00", "")[:MAX_CODE_CHARS]
-            language = detect_language(text)
+            language = language or detect_language(text)
             ctx = Context(code=text, language=language, engine=self)
             findings = self._run_analyzers(ctx)
             verdict, risk, cats, reason, lines, scores = fusion.decide(findings)
