@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CodeGuard</title>
+<style>
+  :root { --bg:#f7f7f8; --fg:#1b1b1f; --muted:#666; --card:#fff; --line:#ddd;
+          --allow:#1a7f37; --block:#c62828; --hl:#fff3c4; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#141417; --fg:#e8e8ea; --muted:#9a9aa2; --card:#1e1e23; --line:#33333a; --hl:#4a3f12; }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.5 system-ui, sans-serif; }
+  main { max-width:960px; margin:0 auto; padding:24px 16px; }
+  h1 { margin:0 0 4px; font-size:22px; }
+  p.sub { margin:0 0 16px; color:var(--muted); }
+  textarea { width:100%; min-height:260px; padding:12px; border:1px solid var(--line); border-radius:8px;
+             background:var(--card); color:var(--fg); font:13px/1.45 ui-monospace, Consolas, monospace; }
+  button { margin-top:10px; padding:8px 18px; border:0; border-radius:6px; background:#3b5bdb; color:#fff;
+           font-weight:600; cursor:pointer; }
+  button:disabled { opacity:.6; }
+  .card { margin-top:16px; padding:16px; background:var(--card); border:1px solid var(--line); border-radius:8px; }
+  .verdict { font-size:20px; font-weight:700; text-transform:uppercase; }
+  .allow { color:var(--allow); } .block { color:var(--block); }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:10px; margin-top:10px; }
+  .k { color:var(--muted); font-size:12px; text-transform:uppercase; }
+  .tag { display:inline-block; margin:2px 4px 2px 0; padding:1px 8px; border-radius:10px;
+         background:var(--bg); border:1px solid var(--line); font-size:13px; }
+  pre { margin:12px 0 0; overflow:auto; font:13px/1.45 ui-monospace, Consolas, monospace; }
+  pre span { display:block; padding:0 6px; white-space:pre; }
+  pre span.hit { background:var(--hl); }
+  pre span i { display:inline-block; width:3em; color:var(--muted); font-style:normal; user-select:none; }
+</style>
+</head>
+<body>
+<main>
+  <h1>CodeGuard</h1>
+  <p class="sub">Pre-execution safety check for generated code. Paste a snippet; it is analysed statically, never run.</p>
+  <textarea id="code" spellcheck="false" placeholder="Paste code, a shell command or SQL here"></textarea>
+  <button id="go">Analyze</button>
+  <div id="out"></div>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+async function analyze() {
+  const code = $("code").value;
+  $("go").disabled = true;
+  const t0 = performance.now();
+  try {
+    const res = await fetch("/analyze", {method:"POST", headers:{"content-type":"application/json"},
+                                         body: JSON.stringify({code})});
+    const body = await res.json();
+    const server = res.headers.get("X-CodeGuard-Latency-Ms");
+    render(code, body, server, performance.now() - t0);
+  } catch (e) {
+    $("out").innerHTML = `<div class="card block">Request failed: ${esc(e)}</div>`;
+  } finally {
+    $("go").disabled = false;
+  }
+}
+
+function render(code, r, serverMs, totalMs) {
+  const hits = new Set(r.vulnerable_lines || []);
+  const lines = code.split("\n").map((l, i) =>
+    `<span class="${hits.has(i + 1) ? "hit" : ""}"><i>${i + 1}</i>${esc(l)}</span>`).join("");
+  const cats = (r.categories || []).map((c) => `<span class="tag">${esc(c)}</span>`).join("") || "&mdash;";
+  $("out").innerHTML = `
+    <div class="card">
+      <div class="verdict ${r.verdict}">${esc(r.verdict)}</div>
+      <div class="grid">
+        <div><div class="k">Risk score</div>${Number(r.risk_score).toFixed(3)}</div>
+        <div><div class="k">Language</div>${esc(r.code_language)}</div>
+        <div><div class="k">Latency</div>${serverMs ? esc(serverMs) + " ms engine" : ""}<br>${totalMs.toFixed(1)} ms round trip</div>
+      </div>
+      <div style="margin-top:10px"><div class="k">Categories</div>${cats}</div>
+      <div style="margin-top:10px"><div class="k">Reason</div>${esc(r.reason || "")}</div>
+      <pre>${lines}</pre>
+    </div>`;
+}
+
+$("go").addEventListener("click", analyze);
+$("code").addEventListener("keydown", (e) => { if ((e.ctrlKey || e.metaKey) && e.key === "Enter") analyze(); });
+</script>
+</body>
+</html>

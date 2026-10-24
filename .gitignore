@@ -5,3 +5,5 @@ __pycache__/
 .env
 demo/sandbox/
 eval/results/*.tmp
+/models/
+eval/results/

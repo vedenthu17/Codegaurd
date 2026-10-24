@@ -7,13 +7,29 @@ from .findings import CATEGORIES, Finding
 
 BLOCK_THRESHOLD = 0.5
 # A secondary category is reported only when it is independently strong.
-SECONDARY_THRESHOLD = 0.6
+SECONDARY_THRESHOLD = 0.5
+
+
+def _dedupe(findings: list[Finding]) -> list[Finding]:
+    """Different layers often report the same fact (e.g. a rule and Bandit on
+    one eval call). Independent evidence is on different lines, so keep only
+    the strongest finding per (category, lines)."""
+    best: dict[tuple, Finding] = {}
+    out: list[Finding] = []
+    for f in findings:
+        if f.severity < 0:
+            out.append(f)
+            continue
+        key = (f.category, f.lines)
+        if key not in best or f.severity > best[key].severity:
+            best[key] = f
+    return out + list(best.values())
 
 
 def category_scores(findings: list[Finding]) -> dict[str, float]:
     keep: dict[str, float] = defaultdict(lambda: 1.0)
     damp: dict[str, float] = defaultdict(lambda: 1.0)
-    for f in findings:
+    for f in _dedupe(findings):
         if f.severity >= 0:
             keep[f.category] *= 1.0 - min(f.severity, 0.99)
         else:

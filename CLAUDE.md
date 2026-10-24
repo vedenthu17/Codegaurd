@@ -29,14 +29,27 @@ Done:
 - Helpers: `analyzers/pyfold.py` (non-executing constant folder), `analyzers/netutil.py`,
   `analyzers/common.py`, `rules/catalog.py`.
 - Tests: 47 passing (`.venv/Scripts/python -m pytest`).
+- `eval/evaluate.py` (binary + per-category P/R/F1, error list, latency p50/p95, `--ablation`, `--json`).
+- Minimal UI `codeguard/api/static/index.html`, Dockerfile, docker-compose.yml, `.env.example`.
+
+- Analyzers (`analyzers/`): ai_text, network, paths, secrets, exfil, obfuscation, resources, shell
+  (tree-sitter-bash), embedded (string re-scan), fences, sql, deps (top-PyPI typosquats), bandit_layer,
+  ai_model (optional ONNX classifier, models/pi, downloaded by scripts/download_model.py).
+- Eval: dev 30/30 + 12/12 (tuned on dev, so optimistic), benign_extra 16/16, `eval/mutate.py`
+  (structural; 1.00 except rename artifact), `eval/fp_scan.py` (stdlib ~2% blocked, mostly genuine
+  dynamic exec), `eval/redcode_eval.py` (untested on real data). Tests: 103 passing; demo 5/5.
+- Gotchas: all regexes must be length-bounded (500KB robustness input); time budget (250ms) is shared,
+  so heavy loads go in `warm()`; fusion dedupes per (category, lines). When writing files via shell
+  heredocs, doubled backslashes can turn into control characters (a `backslash-b` became a backspace) - use
+  the Edit tool or chr() for regex escapes.
+- `eval/stress.py` = extreme stress (robustness, concurrency, big benign, composites): all green, see README. The request time budget scales with input size; do not shrink it (large files lose layers and verdicts become machine-speed dependent). README.md and docs/WRITEUP.md carry the numbers; update them when analyzers change.
 
 TODO:
-- Detection analyzers (registry in `codeguard/analyzers/__init__.py::build_all`; interface:
-  `name`, `languages` (frozenset or None), `run(ctx) -> Iterable[Finding]` via `ctx.finding(...)`).
-- `eval/evaluate.py` (binary + per-category P/R/F1, FPs, latency p50/p95, per-analyzer ablation).
-- Minimal UI at `codeguard/api/static/index.html`, Dockerfile, docker-compose, `.env.example`,
-  README (architecture, components + licenses, assumptions, limitations, AI-assistant disclosure),
-  `docs/WRITEUP.md`.
+- Independently written held-out set (teammate, without seeing the rules), then sweep the 0.5 block
+  threshold (fusion.py) on dev + held-out + stdlib scan + RedCode combined.
+- Obfuscation robustness is untested; JS is regex-only; shell does not resolve variables.
+- Run RedCode-Exec (download it; eval only, never copy patterns, never execute).
+- Replace Bandit's per-call manager with direct AST visitors to cut latency.
 
 ## Commands
 - Tests: `.venv/Scripts/python -m pytest`
