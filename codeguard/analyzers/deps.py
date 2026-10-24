@@ -78,6 +78,9 @@ def _pypi_index() -> tuple[dict[int, list[str]], frozenset[str]]:
     return _pypi_cache
 
 
+_HOMOGLYPHS = str.maketrans({"0": "o", "1": "l", "5": "s"})
+
+
 def typosquat_of(name: str, popular: frozenset[str], npm: bool = False) -> str | None:
     """A popular package this name imitates (one edit away), or None.
 
@@ -85,6 +88,9 @@ def typosquat_of(name: str, popular: frozenset[str], npm: bool = False) -> str |
     comparison uses a real top-N download list; npm uses a small curated list."""
     if len(name) < 5:
         return None
+    plain = name.translate(_HOMOGLYPHS)
+    if plain != name and (plain in popular or (not npm and plain in _pypi_index()[1])):
+        return plain  # e.g. digit 0 standing in for letter o
     if npm:
         buckets: dict[int, list[str]] = {}
         for n in popular:

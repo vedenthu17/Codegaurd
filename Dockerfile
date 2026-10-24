@@ -3,12 +3,21 @@ FROM python:3.12-slim
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 WORKDIR /app
 
-COPY requirements.txt .
+COPY requirements.txt requirements-model.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY codeguard ./codeguard
+COPY scripts ./scripts
 
-RUN useradd --create-home --uid 10001 codeguard
+# Optional prompt-injection model (~740 MB). Default image runs without it:
+# the ai_model layer then switches itself off and every other layer works.
+#   docker build --build-arg WITH_MODEL=1 -t codeguard .
+ARG WITH_MODEL=0
+RUN if [ "$WITH_MODEL" = "1" ]; then \
+        pip install --no-cache-dir -r requirements-model.txt && python scripts/download_model.py; \
+    fi
+
+RUN useradd --create-home --uid 10001 codeguard && chown -R codeguard /app
 USER codeguard
 
 EXPOSE 8000

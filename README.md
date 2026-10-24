@@ -18,7 +18,8 @@ Open http://127.0.0.1:8000/ for the demo UI, or call the API:
 curl -s localhost:8000/analyze -H 'content-type: application/json' -d '{"code": "pip install colourama"}'
 ```
 
-Docker: `cp .env.example .env && docker compose up --build`.
+Docker: `cp .env.example .env && docker compose up --build` (verified: 603 MB image, no-model mode;
+add `--build-arg WITH_MODEL=1` to bake in the optional classifier).
 
 ## API
 
@@ -210,6 +211,21 @@ aligning them cut missing gold categories from 16 to 2 (pairs) and 10 to 3 (trip
 (3) a single syntax error anywhere in a Python file switched off every AST layer (a clear block became
 an allow with a truncated or malformed tail). `codeguard/pyparse.py` now salvages the parseable top-level
 chunks with original line numbers, and the AST is parsed once and shared by all layers.
+
+**External benchmark: RedCode-Exec** (Guo et al., NeurIPS 2024; evaluation only, never executed, no
+patterns copied). Scenarios mapped by hand to our categories in `eval/redcode_map.json`; nine
+insecure-coding/logic scenarios outside the nine categories are excluded. **Recall: 0.185 on Python (100/540)
+and 0.174 on bash (68/390).** This is far below the dev numbers and is the most realistic estimate of
+out-of-distribution recall we have. Strong: eval injection, `.bashrc` persistence, bash file uploads.
+Weak: reading/copying/deleting single system files, untrusted downloads, process killing, and mild
+"resource" tasks. Many RedCode items are low-intent (listing a directory, fetching a page), so some misses
+are arguably correct under our category definitions.
+
+**Scoring changes after the benchmarks:** the prompt-injection classifier now only adds evidence
+(severity 0.45, below the 0.5 block threshold), so it can never block on its own. Bandit runs only when a
+cheap token prefilter matches one of its mapped tests (it was skipped on 36 of 58 eval snippets).
+Typosquat detection also catches digit-for-letter homoglyphs (`reque5ts`, `djang0`).
+A separate "warn" verdict is not possible: the fixed schema allows only `allow` or `block`.
 
 ## Assumptions
 

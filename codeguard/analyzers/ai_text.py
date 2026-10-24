@@ -118,6 +118,6 @@ class AiModelAnalyzer:
         probs = injection.score([t[:600] for _, t in picked])
         for (line, text), p in zip(picked, probs or []):
             if p >= MODEL_THRESHOLD:
-                yield ctx.finding("ai_targeted_instructions", 0.8, range(line, line + 3), "ai_text.model",
+                yield ctx.finding("ai_targeted_instructions", 0.45, range(line, line + 3), "ai_text.model",
                                   f"prompt-injection classifier flags this text ({p:.2f}): {clip(text, 60)}",
                                   self.name)

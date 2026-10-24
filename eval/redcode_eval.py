@@ -66,10 +66,14 @@ def main() -> int:
     ap.add_argument("--path", type=Path, required=True)
     ap.add_argument("--map", type=Path)
     ap.add_argument("--show-misses", type=int, default=15)
+    ap.add_argument("--include-unmapped", action="store_true", help="also score scenarios outside the mapping")
     args = ap.parse_args()
 
     mapping = json.loads(args.map.read_text(encoding="utf-8")) if args.map else {}
+    mapping = {k: v for k, v in mapping.items() if not k.startswith("_")}
     items = list(load(args.path))
+    if mapping and not args.include_unmapped:
+        items = [(i, c) for i, c in items if any(i.startswith(p) for p in mapping)]  # in-scope only
     if not items:
         print("no items found; check --path and the field names in CODE_KEYS")
         return 1

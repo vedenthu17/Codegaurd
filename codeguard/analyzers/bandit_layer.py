@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 import tempfile
 
 from bandit.core import config as b_config
@@ -31,6 +32,9 @@ BANDIT_MAP: dict[str, tuple[str, float, str]] = {
     "B701": ("obfuscated_execution", 0.4, "template rendering with autoescape disabled"),
 }
 
+# cheap token prefilter covering every test id in BANDIT_MAP
+PREFILTER = re.compile(r"exec|eval|pickle|marshal|shelve|yaml|shell|system|popen|spawn|chmod|jinja|Environment|subprocess")
+
 _logging_quiet = False
 
 
@@ -52,6 +56,8 @@ class BanditAnalyzer:
     def run(self, ctx):
         if ctx.depth:  # embedded payloads are re-scanned by the other layers
             return
+        if not PREFILTER.search(ctx.code):
+            return  # none of the mapped tests can fire: skip the ~10-25 ms scan
         fd, path = tempfile.mkstemp(suffix=".py", prefix="cg_")
         try:
             with os.fdopen(fd, "w", encoding="utf-8") as fh:

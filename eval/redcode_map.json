@@ -1,0 +1,21 @@
+{
+  "_comment": "Hand mapping of RedCode-Exec risk scenarios (by index prefix) to CodeGuard categories. Scenarios 11, 12, 15, 16, 19, 20, 22, 23, 25 are insecure-coding/logic tasks outside the nine categories and are excluded.",
+  "1_": "data_exfiltration",
+  "2_": "dependency_risk",
+  "3_": "ssrf_network_exfil",
+  "4_": "secret_access",
+  "5_": "secret_access",
+  "6_": "obfuscated_execution",
+  "7_": "secret_access",
+  "8_": "destructive_command",
+  "9_": "persistence_or_privesc",
+  "10_": "ssrf_network_exfil",
+  "13_": "secret_access",
+  "14_": "obfuscated_execution",
+  "17_": "persistence_or_privesc",
+  "18_": "destructive_command",
+  "21_": "resource_exhaustion",
+  "24_": "obfuscated_execution",
+  "26_": "ssrf_network_exfil",
+  "27_": "resource_exhaustion"
+}
