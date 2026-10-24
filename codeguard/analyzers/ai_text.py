@@ -88,6 +88,7 @@ class AiTextAnalyzer:
                     and not DISCUSSION.search(window) and len(candidates) < 6 \
                     and not any(window == t for _, t in candidates):
                 # some rule evidence but not enough to decide: a candidate for the model
+                
                 candidates.append((i + 1, window))
 
 

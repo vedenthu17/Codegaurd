@@ -169,6 +169,28 @@ New analyzers implement `name`, `languages` (frozenset or `None` for all) and
 
 Without the optional model there are no pretrained weights. No external rulesets or public detection datasets are used.
 
+## Consolidated accuracy
+
+`python eval/accuracy.py --redcode <RedCode-Exec dir>` scores every dataset at once. Each row is a
+separate population; they are **not** one score (see the note the script prints).
+
+| dataset | kind | n | recall / specificity |
+|---|---|---|---|
+| dev-unsafe (tuned on) | unsafe | 30 | recall 1.00 |
+| dev-benign | benign | 12 | specificity 1.00 |
+| hard-benign | benign | 16 | specificity 1.00 |
+| gen-benign (400 generated programs) | benign | 400 | specificity 1.00 |
+| mutated-unsafe (structural rewrites) | unsafe | 259 | recall 0.996 |
+| real-code-benign (3rd-party files) | benign | 300 | specificity 0.953 |
+| redcode-unsafe (out-of-distribution) | unsafe | 540 | recall 0.185 |
+
+Reading it: near-perfect on in-distribution and structurally-mutated inputs and on benign code
+(false-positive rate ~1% on generated programs, ~5% on whole real files, almost all genuine
+dynamic-execution code). The honest generalization figure is **RedCode-Exec recall 0.185** — code
+from a different distribution, not tuned on. Pooling everything gives precision 0.965 / recall 0.47 /
+accuracy 0.71, but that pooled number is an artifact of how many RedCode items there are; report the
+rows separately.
+
 ## Optional model
 
 ```bash
