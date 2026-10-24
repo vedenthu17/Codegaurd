@@ -17,6 +17,9 @@ def build_all() -> list:
     from .secrets import SecretsAnalyzer
     from .shell import ShellAnalyzer
     from .sql import SqlAnalyzer
-    return [AiTextAnalyzer(), NetworkAnalyzer(), PathAnalyzer(), SecretsAnalyzer(), ExfilAnalyzer(),
-            ObfuscationAnalyzer(), ResourceAnalyzer(), ShellAnalyzer(), EmbeddedAnalyzer(), FenceAnalyzer(), SqlAnalyzer(), DependencyAnalyzer(), BanditAnalyzer(),
-            AiModelAnalyzer()]
+    # Ordered cheapest-and-most-decisive first, so that if the shared time
+    # budget runs out on a huge input the high-signal layers have already run.
+    # Bandit (slow) is next-to-last; the ONNX model runs last, off the budget.
+    return [SqlAnalyzer(), DependencyAnalyzer(), ShellAnalyzer(), NetworkAnalyzer(), PathAnalyzer(),
+            SecretsAnalyzer(), ResourceAnalyzer(), ObfuscationAnalyzer(), ExfilAnalyzer(),
+            EmbeddedAnalyzer(), FenceAnalyzer(), AiTextAnalyzer(), BanditAnalyzer(), AiModelAnalyzer()]

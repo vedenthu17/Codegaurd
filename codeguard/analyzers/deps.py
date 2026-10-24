@@ -101,9 +101,13 @@ def typosquat_of(name: str, popular: frozenset[str], npm: bool = False) -> str |
         buckets, known = _pypi_index()
     if name in known:
         return None
-    for length in (len(name) - 1, len(name), len(name) + 1):
+    # distance 1 at any length; distance 2 only for short names, where a single
+    # typo is a larger share of the word and confusions are more plausible.
+    max_edit = 2 if len(name) < 8 else 1
+    for length in range(len(name) - max_edit, len(name) + max_edit + 1):
         for cand in buckets.get(length, ()):
-            if _dist(name, cand) == 1:
+            d = _dist(name, cand)
+            if d <= max_edit and d <= (1 if len(cand) >= 8 else 2):
                 return cand
     return None
 

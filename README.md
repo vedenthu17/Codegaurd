@@ -227,6 +227,14 @@ cheap token prefilter matches one of its mapped tests (it was skipped on 36 of 5
 Typosquat detection also catches digit-for-letter homoglyphs (`reque5ts`, `djang0`).
 A separate "warn" verdict is not possible: the fixed schema allows only `allow` or `block`.
 
+**Layer order and timeouts:** analyzers run cheapest-and-most-decisive first (sql, deps, shell,
+network, paths, secrets, ...), with Bandit next-to-last and the optional model last and off the
+budget. If the shared, size-scaled time budget is exhausted on a very large input, remaining
+budget-bound layers are skipped, so the verdict reflects only the layers that ran (it can
+under-detect but a completed layer's block always stands). Ordering the decisive layers first makes
+that outcome rare; `CODEGUARD_BUDGET_MS` raises the budget if needed. Typosquat detection now also
+flags distance-2 misspellings for names shorter than 8 characters (e.g. `reqests`, `clcik`).
+
 ## Assumptions
 
 - Snippets are untrusted text and are never executed (except the organizer's demo pair,
